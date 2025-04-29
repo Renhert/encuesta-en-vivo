@@ -13,6 +13,7 @@ let currentPoll = null;
 let pollTimer = null;
 const pastPolls = [];
 
+// Función para lanzar una nueva encuesta
 function startPoll(question, options, maxSelections, durationSeconds) {
     currentPoll = {
         id: uuidv4(),
@@ -43,6 +44,7 @@ function startPoll(question, options, maxSelections, durationSeconds) {
     }
 }
 
+// Función para terminar la encuesta
 function endPoll() {
     if (currentPoll && currentPoll.isActive) {
         currentPoll.isActive = false;
@@ -57,9 +59,11 @@ function endPoll() {
     }
 }
 
+// Configuración de sockets
 io.on('connection', (socket) => {
     console.log('Nuevo usuario conectado');
 
+    // Si hay una encuesta activa, enviar
     if (currentPoll && currentPoll.isActive) {
         socket.emit('newPoll', {
             id: currentPoll.id,
@@ -69,6 +73,7 @@ io.on('connection', (socket) => {
         });
     }
 
+    // Recibir votos
     socket.on('vote', (selectedOptions) => {
         if (currentPoll && currentPoll.isActive) {
             selectedOptions.forEach(option => {
@@ -79,18 +84,23 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Recibir nueva encuesta
+    socket.on('startNewPoll', ({ question, options, maxSelections, durationSeconds }) => {
+        console.log('Nueva encuesta recibida en el servidor:', question, options, maxSelections);
+        startPoll(question, options, maxSelections, durationSeconds);
+    });
+
+    // Finalizar encuesta
     socket.on('endPoll', () => {
         endPoll();
     });
 
-    socket.on('startNewPoll', ({ question, options, maxSelections, durationSeconds }) => {
-        startPoll(question, options, maxSelections, durationSeconds);
-    });
-
+    // Solicitar encuestas pasadas
     socket.on('getPastPolls', () => {
         socket.emit('pastPolls', pastPolls);
     });
 
+    // Eliminar encuesta del historial
     socket.on('deletePoll', (pollId) => {
         const index = pastPolls.findIndex(p => p.id === pollId);
         if (index !== -1) {
@@ -99,11 +109,13 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Ocultar resultados manualmente
     socket.on('hideResults', () => {
         io.emit('hideResults');
     });
 });
 
+// Puerto y arranque
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`Servidor corriendo en el puerto ${PORT}`);

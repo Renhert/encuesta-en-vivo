@@ -22,6 +22,7 @@ let resultsTimeout = null;
 
 // Mostrar encuesta activa
 socket.on('newPoll', (data) => {
+console.log('Encuesta recibida:', data);
   currentPollId = data.id;
   maxSelectionsAllowed = data.maxSelections || 1;
 
