@@ -6,6 +6,26 @@
   <script src="/socket.io/socket.io.js"></script>
   <script defer src="client.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    .result-bar-container {
+      margin: 10px 0;
+    }
+    .result-bar {
+      height: 25px;
+      width: 0%;
+      border-radius: 12px;
+      transition: width 1s ease-in-out;
+      color: white;
+      padding: 5px;
+      font-weight: bold;
+      text-align: right;
+      overflow: hidden;
+    }
+    .result-label {
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
   <header id="secret-click-area">

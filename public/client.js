@@ -73,14 +73,37 @@ socket.on('pollResults', (options) => {
   resultsEl.style.display = 'block';
   resultsContent.innerHTML = '';
 
-  for (let [option, count] of Object.entries(options)) {
-    const div = document.createElement('div');
-    div.textContent = `${option}: ${count} votos`;
-    resultsContent.appendChild(div);
-  }
+  const totalVotes = Object.values(options).reduce((acc, votes) => acc + votes, 0) || 1;
+
+  Object.entries(options).forEach(([option, count]) => {
+    const percentage = ((count / totalVotes) * 100).toFixed(1);
+
+    const container = document.createElement('div');
+    container.className = 'result-bar-container';
+
+    const label = document.createElement('div');
+    label.className = 'result-label';
+    label.textContent = `${option}: ${count} votos (${percentage}%)`;
+
+    const bar = document.createElement('div');
+    bar.className = 'result-bar';
+    bar.style.backgroundColor = randomColor();
+    setTimeout(() => {
+      bar.style.width = `${percentage}%`;
+    }, 100);
+
+    container.appendChild(label);
+    container.appendChild(bar);
+    resultsContent.appendChild(container);
+  });
 
   startResultsTimeout();
 });
+
+function randomColor() {
+  const colors = ['#FF5733', '#33B5FF', '#8D33FF', '#33FF57', '#FFC133', '#FF33A8', '#33FFF2', '#FF3333'];
+  return colors[Math.floor(Math.random() * colors.length)];
+}
 
 function disableOptions() {
   const checkboxes = document.querySelectorAll('input[name="option"]');
@@ -111,37 +134,6 @@ function startResultsTimeout() {
     resultsEl.style.display = 'none';
   }, 30 * 60 * 1000);
 }
-
-adminForm.addEventListener('submit', (e) => {
-  e.preventDefault();
-
-  const password = document.getElementById('admin-password').value.trim();
-  const question = document.getElementById('new-question').value.trim();
-  const optionsText = document.getElementById('new-options').value.trim();
-  const maxSelections = document.getElementById('max-selections').value.trim();
-  const duration = document.getElementById('duration').value.trim();
-
-  if (password !== ADMIN_PASSWORD) {
-    alert('Contraseña incorrecta.');
-    return;
-  }
-
-  const options = optionsText.split(',').map(opt => opt.trim()).filter(opt => opt.length > 0);
-
-  if (!question || options.length < 2 || !maxSelections) {
-    alert('Pregunta, opciones o número máximo de selecciones inválidos.');
-    return;
-  }
-
-  socket.emit('startNewPoll', {
-    question,
-    options,
-    maxSelections: parseInt(maxSelections),
-    durationSeconds: duration ? parseInt(duration) : null
-  });
-
-  adminForm.reset();
-});
 
 // Panel secreto admin
 let clickCount = 0;
