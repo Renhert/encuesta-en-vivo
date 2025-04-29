@@ -13,110 +13,96 @@ let currentPoll = null;
 let pollTimer = null;
 const pastPolls = [];
 
-// Función para lanzar una nueva encuesta
 function startPoll(question, options, maxSelections, durationSeconds) {
-    currentPoll = {
-        id: uuidv4(),
-        question,
-        options: options.reduce((acc, option) => {
-            acc[option] = 0;
-            return acc;
-        }, {}),
-        isActive: true,
-        startTime: Date.now(),
-        maxSelections
-    };
+  currentPoll = {
+    id: uuidv4(),
+    question,
+    options: options.reduce((acc, option) => {
+      acc[option] = 0;
+      return acc;
+    }, {}),
+    isActive: true,
+    startTime: Date.now(),
+    maxSelections,
+  };
 
-    io.emit('newPoll', {
-        id: currentPoll.id,
-        question: currentPoll.question,
-        options: Object.keys(currentPoll.options),
-        maxSelections: currentPoll.maxSelections,
-        durationSeconds
-    });
+  io.emit('newPoll', {
+    id: currentPoll.id,
+    question: currentPoll.question,
+    options: Object.keys(currentPoll.options),
+    maxSelections: currentPoll.maxSelections,
+    durationSeconds,
+  });
 
-    if (pollTimer) clearTimeout(pollTimer);
+  if (pollTimer) clearTimeout(pollTimer);
 
-    if (durationSeconds) {
-        pollTimer = setTimeout(() => {
-            endPoll();
-        }, durationSeconds * 1000);
-    }
+  if (durationSeconds) {
+    pollTimer = setTimeout(() => {
+      endPoll();
+    }, durationSeconds * 1000);
+  }
 }
 
-// Función para terminar la encuesta
 function endPoll() {
-    if (currentPoll && currentPoll.isActive) {
-        currentPoll.isActive = false;
-        currentPoll.endTime = Date.now();
-        pastPolls.push({
-            id: currentPoll.id,
-            question: currentPoll.question,
-            options: currentPoll.options,
-            endTime: currentPoll.endTime
-        });
-        io.emit('pollResults', currentPoll.options);
-    }
+  if (currentPoll && currentPoll.isActive) {
+    currentPoll.isActive = false;
+    currentPoll.endTime = Date.now();
+    pastPolls.push({
+      id: currentPoll.id,
+      question: currentPoll.question,
+      options: currentPoll.options,
+      endTime: currentPoll.endTime,
+    });
+    io.emit('pollResults', currentPoll.options);
+  }
 }
 
-// Configuración de sockets
 io.on('connection', (socket) => {
-    console.log('Nuevo usuario conectado');
+  if (currentPoll && currentPoll.isActive) {
+    socket.emit('newPoll', {
+      id: currentPoll.id,
+      question: currentPoll.question,
+      options: Object.keys(currentPoll.options),
+      maxSelections: currentPoll.maxSelections,
+    });
+  }
 
-    // Si hay una encuesta activa, enviar
+  socket.on('vote', (selectedOptions) => {
     if (currentPoll && currentPoll.isActive) {
-        socket.emit('newPoll', {
-            id: currentPoll.id,
-            question: currentPoll.question,
-            options: Object.keys(currentPoll.options),
-            maxSelections: currentPoll.maxSelections
-        });
+      selectedOptions.forEach((option) => {
+        if (currentPoll.options[option] !== undefined) {
+          currentPoll.options[option]++;
+        }
+      });
     }
+  });
 
-    // Recibir votos
-    socket.on('vote', (selectedOptions) => {
-        if (currentPoll && currentPoll.isActive) {
-            selectedOptions.forEach(option => {
-                if (currentPoll.options[option] !== undefined) {
-                    currentPoll.options[option]++;
-                }
-            });
-        }
-    });
+  socket.on('startNewPoll', ({ question, options, maxSelections, durationSeconds }) => {
+    startPoll(question, options, maxSelections, durationSeconds);
+  });
 
-    // Recibir nueva encuesta
-    socket.on('startNewPoll', ({ question, options, maxSelections, durationSeconds }) => {
-        console.log('Nueva encuesta recibida en el servidor:', question, options, maxSelections);
-        startPoll(question, options, maxSelections, durationSeconds);
-    });
+  socket.on('endPoll', () => {
+    endPoll();
+  });
 
-    // Finalizar encuesta
-    socket.on('endPoll', () => {
-        endPoll();
-    });
+  socket.on('getPastPolls', () => {
+    socket.emit('pastPolls', pastPolls);
+  });
 
-    // Solicitar encuestas pasadas
-    socket.on('getPastPolls', () => {
-        socket.emit('pastPolls', pastPolls);
-    });
+  socket.on('deletePoll', (pollId) => {
+    const index = pastPolls.findIndex((p) => p.id === pollId);
+    if (index !== -1) {
+      pastPolls.splice(index, 1);
+      io.emit('pastPolls', pastPolls);
+    }
+  });
 
-    // Eliminar encuesta del historial
-    socket.on('deletePoll', (pollId) => {
-        const index = pastPolls.findIndex(p => p.id === pollId);
-        if (index !== -1) {
-            pastPolls.splice(index, 1);
-            io.emit('pastPolls', pastPolls);
-        }
-    });
-
-    // Ocultar resultados manualmente
-    socket.on('hideResults', () => {
-        io.emit('hideResults');
-    });
+  socket.on('hideResults', () => {
+    io.emit('hideResults');
+  });
 });
 
-// Puerto y arranque
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Servidor corriendo en el puerto ${PORT}`);
+  console.log(`Servidor corriendo en el puerto ${PORT}`);
 });

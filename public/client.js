@@ -22,7 +22,6 @@ let resultsTimeout = null;
 
 // Mostrar encuesta activa
 socket.on('newPoll', (data) => {
-console.log('Encuesta recibida:', data);
   currentPollId = data.id;
   maxSelectionsAllowed = data.maxSelections || 1;
 
@@ -133,7 +132,7 @@ function startResultsTimeout() {
   clearTimeout(resultsTimeout);
   resultsTimeout = setTimeout(() => {
     resultsEl.style.display = 'none';
-  }, 30 * 60 * 1000);
+  }, 30 * 60 * 1000); // 30 minutos
 }
 
 // Panel secreto admin
