@@ -12,6 +12,9 @@ const endPollButton = document.getElementById('end-poll-button');
 const hideResultsButton = document.getElementById('hide-results-button');
 const secretArea = document.getElementById('secret-click-area');
 const adminPanel = document.getElementById('admin-panel');
+const adminLogin = document.getElementById('admin-login');
+const adminActions = document.getElementById('admin-actions');
+const adminLoginButton = document.getElementById('admin-login-button');
 const pastPollsDiv = document.getElementById('past-polls');
 
 let countdownInterval = null;
@@ -20,21 +23,27 @@ let currentPollId = null;
 let maxSelectionsAllowed = 1;
 let resultsTimeout = null;
 
-// 🔥 Formularios de admin corregido
+// 🔥 Nuevo: control de login
+adminLoginButton.addEventListener('click', () => {
+  const password = document.getElementById('admin-password').value.trim();
+  if (password === ADMIN_PASSWORD) {
+    adminLogin.style.display = 'none';
+    adminActions.style.display = 'block';
+    socket.emit('getPastPolls'); // cargar historial
+  } else {
+    alert("Contraseña incorrecta.");
+  }
+});
+
+// 🔥 Formularios de admin
 adminForm.addEventListener('submit', (e) => {
   e.preventDefault();
 
-  const password = document.getElementById('admin-password').value.trim();
   const question = document.getElementById('new-question').value.trim();
   const options = document.getElementById('new-options').value.split(',').map(opt => opt.trim()).filter(opt => opt);
   const maxSelections = parseInt(document.getElementById('max-selections').value);
   const durationInput = document.getElementById('duration').value.trim();
   const duration = durationInput ? parseInt(durationInput) : null;
-
-  if (password !== ADMIN_PASSWORD) {
-    alert("Contraseña incorrecta.");
-    return;
-  }
 
   if (!question || options.length < 2 || isNaN(maxSelections) || maxSelections < 1) {
     alert("Rellena todos los campos correctamente.");
@@ -182,7 +191,8 @@ secretArea.addEventListener('click', () => {
   clickCount++;
   if (clickCount === 5) {
     adminPanel.style.display = 'block';
-    socket.emit('getPastPolls');
+    adminLogin.style.display = 'block'; // mostrar solo login primero
+    adminActions.style.display = 'none';
     clickCount = 0;
     clearTimeout(clickTimer);
   } else {

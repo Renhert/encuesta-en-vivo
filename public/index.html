@@ -54,9 +54,6 @@
       cursor: pointer;
       width: 100%;
     }
-    button:hover {
-      background-color: #eee;
-    }
     input[type="text"], input[type="password"], input[type="number"] {
       width: 100%;
       padding: 10px;
@@ -91,21 +88,11 @@
       font-weight: bold;
     }
     @media (max-width: 600px) {
-      h1 {
-        font-size: 1.5rem;
-      }
-      h2 {
-        font-size: 1.3rem;
-      }
-      label {
-        font-size: 1.1rem;
-      }
-      button {
-        font-size: 1rem;
-      }
-      input[type="text"], input[type="password"], input[type="number"] {
-        font-size: 0.9rem;
-      }
+      h1 { font-size: 1.5rem; }
+      h2 { font-size: 1.3rem; }
+      label { font-size: 1.1rem; }
+      button { font-size: 1rem; }
+      input[type="text"], input[type="password"], input[type="number"] { font-size: 0.9rem; }
     }
   </style>
 </head>
@@ -128,21 +115,27 @@
   </div>
 
   <div id="admin-panel" style="display:none;">
-    <h2>Administración</h2>
-    <form id="admin-form">
+    <div id="admin-login">
       <input type="password" id="admin-password" placeholder="Contraseña de administrador" required />
-      <input type="text" id="new-question" placeholder="Pregunta de la encuesta" required />
-      <input type="text" id="new-options" placeholder="Opciones separadas por comas" required />
-      <input type="number" id="max-selections" placeholder="Máximo de opciones a seleccionar" required />
-      <input type="number" id="duration" placeholder="Duración en segundos (opcional)" />
-      <button type="submit">Lanzar Nueva Encuesta</button>
-    </form>
+      <button id="admin-login-button">Entrar</button>
+    </div>
 
-    <button id="end-poll-button">Finalizar Encuesta</button>
-    <button id="hide-results-button">Ocultar Resultados Ahora</button>
+    <div id="admin-actions" style="display: none;">
+      <h2>Administración</h2>
+      <form id="admin-form">
+        <input type="text" id="new-question" placeholder="Pregunta de la encuesta" required />
+        <input type="text" id="new-options" placeholder="Opciones separadas por comas" required />
+        <input type="number" id="max-selections" placeholder="Máximo de opciones a seleccionar" required />
+        <input type="number" id="duration" placeholder="Duración en segundos (opcional)" />
+        <button type="submit">Lanzar Nueva Encuesta</button>
+      </form>
 
-    <h2>Historial de Encuestas</h2>
-    <div id="past-polls"></div>
+      <button id="end-poll-button">Finalizar Encuesta</button>
+      <button id="hide-results-button">Ocultar Resultados Ahora</button>
+
+      <h2>Historial de Encuestas</h2>
+      <div id="past-polls"></div>
+    </div>
   </div>
 </body>
 </html>
