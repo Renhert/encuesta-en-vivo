@@ -11,10 +11,9 @@ app.use(express.static('public'));
 
 let currentPoll = null;
 let pollTimer = null;
-const pastPolls = []; // Guardar historial de encuestas
+const pastPolls = [];
 
-// Crear una nueva encuesta
-function startPoll(question, options, durationSeconds) {
+function startPoll(question, options, maxSelections, durationSeconds) {
     currentPoll = {
         id: uuidv4(),
         question,
@@ -24,12 +23,14 @@ function startPoll(question, options, durationSeconds) {
         }, {}),
         isActive: true,
         startTime: Date.now(),
+        maxSelections
     };
 
     io.emit('newPoll', {
         id: currentPoll.id,
         question: currentPoll.question,
         options: Object.keys(currentPoll.options),
+        maxSelections: currentPoll.maxSelections,
         durationSeconds
     });
 
@@ -42,7 +43,6 @@ function startPoll(question, options, durationSeconds) {
     }
 }
 
-// Terminar encuesta
 function endPoll() {
     if (currentPoll && currentPoll.isActive) {
         currentPoll.isActive = false;
@@ -57,7 +57,6 @@ function endPoll() {
     }
 }
 
-// Socket.io eventos
 io.on('connection', (socket) => {
     console.log('Nuevo usuario conectado');
 
@@ -65,13 +64,18 @@ io.on('connection', (socket) => {
         socket.emit('newPoll', {
             id: currentPoll.id,
             question: currentPoll.question,
-            options: Object.keys(currentPoll.options)
+            options: Object.keys(currentPoll.options),
+            maxSelections: currentPoll.maxSelections
         });
     }
 
-    socket.on('vote', (option) => {
-        if (currentPoll && currentPoll.isActive && currentPoll.options[option] !== undefined) {
-            currentPoll.options[option]++;
+    socket.on('vote', (selectedOptions) => {
+        if (currentPoll && currentPoll.isActive) {
+            selectedOptions.forEach(option => {
+                if (currentPoll.options[option] !== undefined) {
+                    currentPoll.options[option]++;
+                }
+            });
         }
     });
 
@@ -79,8 +83,8 @@ io.on('connection', (socket) => {
         endPoll();
     });
 
-    socket.on('startNewPoll', ({ question, options, durationSeconds }) => {
-        startPoll(question, options, durationSeconds);
+    socket.on('startNewPoll', ({ question, options, maxSelections, durationSeconds }) => {
+        startPoll(question, options, maxSelections, durationSeconds);
     });
 
     socket.on('getPastPolls', () => {
@@ -104,3 +108,4 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`Servidor corriendo en el puerto ${PORT}`);
 });
+

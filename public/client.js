@@ -3,6 +3,7 @@ const socket = io();
 const pollSection = document.getElementById('poll-section');
 const questionEl = document.getElementById('question');
 const optionsEl = document.getElementById('options');
+const maxSelectionInfo = document.getElementById('max-selection-info');
 const timerEl = document.getElementById('timer');
 const resultsEl = document.getElementById('results');
 const resultsContent = document.getElementById('results-content');
@@ -16,33 +17,48 @@ const pastPollsDiv = document.getElementById('past-polls');
 let countdownInterval = null;
 const ADMIN_PASSWORD = "019143";
 let currentPollId = null;
+let maxSelectionsAllowed = 1;
 let resultsTimeout = null;
 
 // Mostrar encuesta activa
 socket.on('newPoll', (data) => {
   currentPollId = data.id;
+  maxSelectionsAllowed = data.maxSelections || 1;
+
   resultsEl.style.display = 'none';
   pollSection.style.display = 'block';
   questionEl.textContent = data.question;
   optionsEl.innerHTML = '';
+  maxSelectionInfo.textContent = `Puedes seleccionar hasta ${maxSelectionsAllowed} opciones`;
 
   const alreadyVoted = localStorage.getItem('pollVoted_' + currentPollId);
 
   data.options.forEach(option => {
-    const btn = document.createElement('button');
-    btn.className = 'option-btn';
-    btn.textContent = option;
-    btn.disabled = alreadyVoted !== null;
-    btn.onclick = () => {
-      if (!alreadyVoted) {
-        socket.emit('vote', option);
-        localStorage.setItem('pollVoted_' + currentPollId, 'true');
-        disableOptions();
-        alert('¡Gracias por tu voto!');
-      }
-    };
-    optionsEl.appendChild(btn);
+    const label = document.createElement('label');
+    label.innerHTML = `<input type="checkbox" name="option" value="${option}" ${alreadyVoted ? "disabled" : ""}> ${option}`;
+    optionsEl.appendChild(label);
+    optionsEl.appendChild(document.createElement('br'));
   });
+
+  const voteButton = document.createElement('button');
+  voteButton.textContent = 'Votar';
+  voteButton.disabled = alreadyVoted !== null;
+  voteButton.onclick = () => {
+    const selected = Array.from(document.querySelectorAll('input[name="option"]:checked')).map(cb => cb.value);
+    if (selected.length === 0) {
+      alert('Debes seleccionar al menos una opción.');
+      return;
+    }
+    if (selected.length > maxSelectionsAllowed) {
+      alert(`Sólo puedes seleccionar hasta ${maxSelectionsAllowed} opciones.`);
+      return;
+    }
+    socket.emit('vote', selected);
+    localStorage.setItem('pollVoted_' + currentPollId, 'true');
+    disableOptions();
+    alert('¡Gracias por tu voto!');
+  };
+  optionsEl.appendChild(voteButton);
 
   if (data.durationSeconds) {
     startCountdown(data.durationSeconds);
@@ -66,10 +82,11 @@ socket.on('pollResults', (options) => {
   startResultsTimeout();
 });
 
-// Funciones auxiliares
 function disableOptions() {
-  const buttons = document.querySelectorAll('.option-btn');
-  buttons.forEach(btn => btn.disabled = true);
+  const checkboxes = document.querySelectorAll('input[name="option"]');
+  checkboxes.forEach(cb => cb.disabled = true);
+  const button = document.querySelector('button');
+  if (button) button.disabled = true;
 }
 
 function startCountdown(seconds) {
@@ -92,16 +109,16 @@ function startResultsTimeout() {
   clearTimeout(resultsTimeout);
   resultsTimeout = setTimeout(() => {
     resultsEl.style.display = 'none';
-  }, 30 * 60 * 1000); // 30 minutos
+  }, 30 * 60 * 1000);
 }
 
-// Formulario admin
 adminForm.addEventListener('submit', (e) => {
   e.preventDefault();
 
   const password = document.getElementById('admin-password').value.trim();
   const question = document.getElementById('new-question').value.trim();
   const optionsText = document.getElementById('new-options').value.trim();
+  const maxSelections = document.getElementById('max-selections').value.trim();
   const duration = document.getElementById('duration').value.trim();
 
   if (password !== ADMIN_PASSWORD) {
@@ -111,41 +128,22 @@ adminForm.addEventListener('submit', (e) => {
 
   const options = optionsText.split(',').map(opt => opt.trim()).filter(opt => opt.length > 0);
 
-  if (!question || options.length < 2) {
-    alert('Pregunta u opciones inválidas.');
+  if (!question || options.length < 2 || !maxSelections) {
+    alert('Pregunta, opciones o número máximo de selecciones inválidos.');
     return;
   }
 
   socket.emit('startNewPoll', {
     question,
     options,
+    maxSelections: parseInt(maxSelections),
     durationSeconds: duration ? parseInt(duration) : null
   });
 
   adminForm.reset();
 });
 
-// Finalizar encuesta
-endPollButton.addEventListener('click', () => {
-  const password = prompt("Introduce la contraseña para finalizar:");
-  if (password === ADMIN_PASSWORD) {
-    socket.emit('endPoll');
-  } else {
-    alert('Contraseña incorrecta.');
-  }
-});
-
-// Ocultar resultados antes de 30 minutos
-hideResultsButton.addEventListener('click', () => {
-  const password = prompt("Introduce la contraseña para ocultar resultados:");
-  if (password === ADMIN_PASSWORD) {
-    socket.emit('hideResults');
-  } else {
-    alert('Contraseña incorrecta.');
-  }
-});
-
-// Panel oculto admin
+// Panel secreto admin
 let clickCount = 0;
 let clickTimer = null;
 

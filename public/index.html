@@ -15,6 +15,7 @@
 
   <div id="poll-section" style="display:none;">
     <h2 id="question"></h2>
+    <div id="max-selection-info"></div>
     <div id="options"></div>
     <div id="timer"></div>
   </div>
@@ -30,6 +31,7 @@
       <input type="password" id="admin-password" placeholder="Contraseña de administrador" required />
       <input type="text" id="new-question" placeholder="Pregunta de la encuesta" required />
       <input type="text" id="new-options" placeholder="Opciones separadas por comas" required />
+      <input type="number" id="max-selections" placeholder="Máximo de opciones a seleccionar" required />
       <input type="number" id="duration" placeholder="Duración en segundos (opcional)" />
       <button type="submit">Lanzar Nueva Encuesta</button>
     </form>
