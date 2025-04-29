@@ -1,4 +1,6 @@
-const socket = io();
+const socket = io({
+  transports: ['polling']
+});
 
 const pollSection = document.getElementById('poll-section');
 const questionEl = document.getElementById('question');
