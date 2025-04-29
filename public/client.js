@@ -12,6 +12,24 @@ const endPollButton = document.getElementById('end-poll-button');
 const hideResultsButton = document.getElementById('hide-results-button');
 const secretArea = document.getElementById('secret-click-area');
 const adminPanel = document.getElementById('admin-panel');
+// Panel secreto admin (clic 5 veces en #secret-click-area)
+let clickCount = 0;
+let clickTimer = null;
+
+secretArea.addEventListener('click', () => {
+  clickCount++;
+  if (clickCount === 5) {
+    adminPanel.style.display = 'block';
+    socket.emit('getPastPolls');
+    clickCount = 0;
+    clearTimeout(clickTimer);
+  } else {
+    if (clickTimer) clearTimeout(clickTimer);
+    clickTimer = setTimeout(() => {
+      clickCount = 0;
+    }, 1000); // Reset si no haces los 5 clics seguidos rápido
+  }
+});
 const pastPollsDiv = document.getElementById('past-polls');
 
 let countdownInterval = null;
