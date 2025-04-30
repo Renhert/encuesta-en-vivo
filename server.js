@@ -11,7 +11,7 @@ app.use(express.static('public'));
 
 let currentPoll = null;
 let pollTimer = null;
-let lastPollResults = null; // NUEVO
+let lastPollResults = null; // ⬅ Guardar resultados después del cierre
 const pastPolls = [];
 
 function startPoll(question, options, maxSelections, durationSeconds) {
@@ -43,7 +43,7 @@ function startPoll(question, options, maxSelections, durationSeconds) {
     }, durationSeconds * 1000);
   }
 
-  lastPollResults = null; // reinicia los resultados anteriores
+  lastPollResults = null; // reiniciar resultados previos
 }
 
 function endPoll() {
@@ -56,8 +56,20 @@ function endPoll() {
       options: currentPoll.options,
       endTime: currentPoll.endTime,
     });
-    lastPollResults = { question: currentPoll.question, options: currentPoll.options }; // guardar resultado
+
+    lastPollResults = {
+      question: currentPoll.question,
+      options: currentPoll.options
+    };
+
     io.emit('pollResults', currentPoll.options);
+
+    // 🕓 Borrar resultados después de 30 minutos
+    setTimeout(() => {
+      if (lastPollResults) {
+        lastPollResults = null;
+      }
+    }, 30 * 60 * 1000);
   }
 }
 
@@ -70,7 +82,7 @@ io.on('connection', (socket) => {
       maxSelections: currentPoll.maxSelections,
     });
   } else if (lastPollResults) {
-    socket.emit('pollResults', lastPollResults.options); // ENVÍA RESULTADOS si no hay encuesta activa
+    socket.emit('pollResults', lastPollResults.options);
   }
 
   socket.on('vote', (selectedOptions) => {
@@ -104,6 +116,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('hideResults', () => {
+    lastPollResults = null; // ⬅ Borrar resultados también en servidor
     io.emit('hideResults');
   });
 });
