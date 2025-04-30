@@ -11,6 +11,7 @@ app.use(express.static('public'));
 
 let currentPoll = null;
 let pollTimer = null;
+let lastPollResults = null; // NUEVO
 const pastPolls = [];
 
 function startPoll(question, options, maxSelections, durationSeconds) {
@@ -41,6 +42,8 @@ function startPoll(question, options, maxSelections, durationSeconds) {
       endPoll();
     }, durationSeconds * 1000);
   }
+
+  lastPollResults = null; // reinicia los resultados anteriores
 }
 
 function endPoll() {
@@ -53,6 +56,7 @@ function endPoll() {
       options: currentPoll.options,
       endTime: currentPoll.endTime,
     });
+    lastPollResults = { question: currentPoll.question, options: currentPoll.options }; // guardar resultado
     io.emit('pollResults', currentPoll.options);
   }
 }
@@ -65,6 +69,8 @@ io.on('connection', (socket) => {
       options: Object.keys(currentPoll.options),
       maxSelections: currentPoll.maxSelections,
     });
+  } else if (lastPollResults) {
+    socket.emit('pollResults', lastPollResults.options); // ENVÍA RESULTADOS si no hay encuesta activa
   }
 
   socket.on('vote', (selectedOptions) => {
