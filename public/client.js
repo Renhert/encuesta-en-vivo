@@ -1,3 +1,4 @@
+// client.js
 const socket = io({ transports: ['polling'] });
 
 const pollSection = document.getElementById('poll-section');
@@ -46,7 +47,6 @@ adminForm.addEventListener('submit', (e) => {
   const showDate = document.getElementById('show-date').value;
   const showTime = document.getElementById('show-time').value;
   let showAt = null;
-
   if (showDate && showTime) {
     showAt = new Date(`${showDate}T${showTime}`).getTime();
   }
@@ -188,7 +188,6 @@ function startResultsTimeout() {
   }, 30 * 60 * 1000);
 }
 
-// Panel admin secreto
 let clickCount = 0;
 let clickTimer = null;
 
@@ -210,9 +209,10 @@ secretArea.addEventListener('click', () => {
 
 socket.on('pastPolls', (polls) => {
   pastPollsDiv.innerHTML = '';
+
   polls.forEach(poll => {
-    const date = new Date(poll.endTime).toLocaleString();
     const pollDiv = document.createElement('div');
+    const date = new Date(poll.endTime).toLocaleString();
     pollDiv.innerHTML = `<strong>${poll.question}</strong><br>${Object.entries(poll.options).map(([opt, count]) => `${opt}: ${count} votos`).join('<br>')}<br><small>Finalizada el ${date}</small><br><button onclick="deletePoll('${poll.id}')">Eliminar</button><hr>`;
     pastPollsDiv.appendChild(pollDiv);
   });
@@ -228,4 +228,3 @@ function deletePoll(pollId) {
 socket.on('hideResults', () => {
   resultsEl.style.display = 'none';
 });
-
