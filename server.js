@@ -1,4 +1,3 @@
-// server.js
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -12,7 +11,6 @@ app.use(express.static('public'));
 
 let currentPoll = null;
 let pollTimer = null;
-let lastPollResults = null;
 const pastPolls = [];
 
 function startPoll(question, options, maxSelections, durationSeconds, showAt) {
@@ -50,33 +48,21 @@ function startPoll(question, options, maxSelections, durationSeconds, showAt) {
       endPoll();
     }, delay);
   }
-
-  lastPollResults = null;
 }
 
 function endPoll() {
   if (currentPoll && currentPoll.isActive) {
     currentPoll.isActive = false;
     currentPoll.endTime = Date.now();
+
     pastPolls.push({
       id: currentPoll.id,
       question: currentPoll.question,
       options: currentPoll.options,
-      endTime: currentPoll.endTime,
+      endTime: currentPoll.endTime
     });
 
-    lastPollResults = {
-      question: currentPoll.question,
-      options: currentPoll.options
-    };
-
     io.emit('pollResults', currentPoll.options);
-
-    setTimeout(() => {
-      if (lastPollResults) {
-        lastPollResults = null;
-      }
-    }, 30 * 60 * 1000);
   }
 }
 
@@ -88,8 +74,6 @@ io.on('connection', (socket) => {
       options: Object.keys(currentPoll.options),
       maxSelections: currentPoll.maxSelections,
     });
-  } else if (lastPollResults) {
-    socket.emit('pollResults', lastPollResults.options);
   }
 
   socket.on('vote', (selectedOptions) => {
@@ -108,23 +92,6 @@ io.on('connection', (socket) => {
 
   socket.on('endPoll', () => {
     endPoll();
-  });
-
-  socket.on('getPastPolls', () => {
-    socket.emit('pastPolls', pastPolls);
-  });
-
-  socket.on('deletePoll', (pollId) => {
-    const index = pastPolls.findIndex((p) => p.id === pollId);
-    if (index !== -1) {
-      pastPolls.splice(index, 1);
-      io.emit('pastPolls', pastPolls);
-    }
-  });
-
-  socket.on('hideResults', () => {
-    lastPollResults = null;
-    io.emit('hideResults');
   });
 });
 

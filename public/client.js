@@ -1,4 +1,3 @@
-// client.js
 const socket = io({ transports: ['polling'] });
 
 const pollSection = document.getElementById('poll-section');
@@ -10,26 +9,22 @@ const resultsEl = document.getElementById('results');
 const resultsContent = document.getElementById('results-content');
 const adminForm = document.getElementById('admin-form');
 const endPollButton = document.getElementById('end-poll-button');
-const hideResultsButton = document.getElementById('hide-results-button');
 const secretArea = document.getElementById('secret-click-area');
 const adminPanel = document.getElementById('admin-panel');
 const adminLogin = document.getElementById('admin-login');
 const adminActions = document.getElementById('admin-actions');
 const adminLoginButton = document.getElementById('admin-login-button');
-const pastPollsDiv = document.getElementById('past-polls');
 
 let countdownInterval = null;
 const ADMIN_PASSWORD = "019143";
 let currentPollId = null;
 let maxSelectionsAllowed = 1;
-let resultsTimeout = null;
 
 adminLoginButton.addEventListener('click', () => {
   const password = document.getElementById('admin-password').value.trim();
   if (password === ADMIN_PASSWORD) {
     adminLogin.style.display = 'none';
     adminActions.style.display = 'block';
-    socket.emit('getPastPolls');
   } else {
     alert("Contraseña incorrecta.");
   }
@@ -71,15 +66,10 @@ endPollButton.addEventListener('click', () => {
   socket.emit('endPoll');
 });
 
-hideResultsButton.addEventListener('click', () => {
-  socket.emit('hideResults');
-});
-
 socket.on('newPoll', (data) => {
   currentPollId = data.id;
   maxSelectionsAllowed = data.maxSelections || 1;
 
-  resultsEl.style.display = 'none';
   pollSection.style.display = 'block';
   questionEl.textContent = data.question;
   optionsEl.innerHTML = '';
@@ -122,9 +112,8 @@ socket.on('newPoll', (data) => {
 });
 
 socket.on('pollResults', (options) => {
-  pollSection.style.display = 'none';
-  resultsEl.style.display = 'block';
-  resultsContent.innerHTML = '';
+  const resultBlock = document.createElement('div');
+  resultBlock.className = 'result-block';
 
   const totalVotes = Object.values(options).reduce((acc, votes) => acc + votes, 0) || 1;
 
@@ -147,11 +136,21 @@ socket.on('pollResults', (options) => {
 
     container.appendChild(label);
     container.appendChild(bar);
-    resultsContent.appendChild(container);
+    resultBlock.appendChild(container);
   });
 
-  startResultsTimeout();
+  const hideButton = document.createElement('button');
+  hideButton.className = 'hide-button';
+  hideButton.textContent = 'Ocultar esta encuesta';
+  hideButton.onclick = () => resultBlock.remove();
+
+  resultBlock.appendChild(hideButton);
+  resultsContent.prepend(resultBlock);
 });
+
+function hideAllResults() {
+  resultsContent.innerHTML = '';
+}
 
 function randomColor() {
   const colors = ['#FF5733', '#33B5FF', '#8D33FF', '#33FF57', '#FFC133', '#FF33A8', '#33FFF2', '#FF3333'];
@@ -181,13 +180,7 @@ function startCountdown(seconds) {
   }, 1000);
 }
 
-function startResultsTimeout() {
-  clearTimeout(resultsTimeout);
-  resultsTimeout = setTimeout(() => {
-    resultsEl.style.display = 'none';
-  }, 30 * 60 * 1000);
-}
-
+// Panel secreto admin
 let clickCount = 0;
 let clickTimer = null;
 
@@ -205,26 +198,4 @@ secretArea.addEventListener('click', () => {
       clickCount = 0;
     }, 1000);
   }
-});
-
-socket.on('pastPolls', (polls) => {
-  pastPollsDiv.innerHTML = '';
-
-  polls.forEach(poll => {
-    const pollDiv = document.createElement('div');
-    const date = new Date(poll.endTime).toLocaleString();
-    pollDiv.innerHTML = `<strong>${poll.question}</strong><br>${Object.entries(poll.options).map(([opt, count]) => `${opt}: ${count} votos`).join('<br>')}<br><small>Finalizada el ${date}</small><br><button onclick="deletePoll('${poll.id}')">Eliminar</button><hr>`;
-    pastPollsDiv.appendChild(pollDiv);
-  });
-});
-
-function deletePoll(pollId) {
-  const confirmDelete = confirm("¿Estás seguro de que quieres eliminar esta encuesta?");
-  if (confirmDelete) {
-    socket.emit('deletePoll', pollId);
-  }
-}
-
-socket.on('hideResults', () => {
-  resultsEl.style.display = 'none';
 });
