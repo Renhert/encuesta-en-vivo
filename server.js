@@ -1,3 +1,4 @@
+// server.js
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -12,6 +13,7 @@ app.use(express.static('public'));
 let currentPoll = null;
 let pollTimer = null;
 let lastPollResults = null;
+const pastPolls = [];
 
 function startPoll(question, options, maxSelections, durationSeconds, showAt) {
   currentPoll = {
@@ -49,13 +51,19 @@ function startPoll(question, options, maxSelections, durationSeconds, showAt) {
     }, delay);
   }
 
-  lastPollResults = null; // Reset resultados
+  lastPollResults = null;
 }
 
 function endPoll() {
   if (currentPoll && currentPoll.isActive) {
     currentPoll.isActive = false;
     currentPoll.endTime = Date.now();
+    pastPolls.push({
+      id: currentPoll.id,
+      question: currentPoll.question,
+      options: currentPoll.options,
+      endTime: currentPoll.endTime,
+    });
 
     lastPollResults = {
       question: currentPoll.question,
@@ -63,28 +71,30 @@ function endPoll() {
     };
 
     io.emit('pollResults', currentPoll.options);
+
+    setTimeout(() => {
+      if (lastPollResults) {
+        lastPollResults = null;
+      }
+    }, 30 * 60 * 1000);
   }
 }
 
 io.on('connection', (socket) => {
-  // Mostrar encuesta si está activa
   if (currentPoll && currentPoll.isActive) {
     socket.emit('newPoll', {
       id: currentPoll.id,
       question: currentPoll.question,
       options: Object.keys(currentPoll.options),
-      maxSelections: currentPoll.maxSelections
+      maxSelections: currentPoll.maxSelections,
     });
-  }
-
-  // Mostrar resultados anteriores si existen
-  if (lastPollResults) {
+  } else if (lastPollResults) {
     socket.emit('pollResults', lastPollResults.options);
   }
 
   socket.on('vote', (selectedOptions) => {
     if (currentPoll && currentPoll.isActive) {
-      selectedOptions.forEach(option => {
+      selectedOptions.forEach((option) => {
         if (currentPoll.options[option] !== undefined) {
           currentPoll.options[option]++;
         }
@@ -100,6 +110,18 @@ io.on('connection', (socket) => {
     endPoll();
   });
 
+  socket.on('getPastPolls', () => {
+    socket.emit('pastPolls', pastPolls);
+  });
+
+  socket.on('deletePoll', (pollId) => {
+    const index = pastPolls.findIndex((p) => p.id === pollId);
+    if (index !== -1) {
+      pastPolls.splice(index, 1);
+      io.emit('pastPolls', pastPolls);
+    }
+  });
+
   socket.on('hideResults', () => {
     lastPollResults = null;
     io.emit('hideResults');
@@ -107,6 +129,6 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Servidor en marcha en el puerto ${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Servidor corriendo en el puerto ${PORT}`);
 });
