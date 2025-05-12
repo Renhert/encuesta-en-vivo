@@ -15,33 +15,44 @@
       margin: 0;
       padding: 0;
     }
-    header {
-      text-align: center;
-      padding: 20px;
+
+    header img {
+      width: 100%;
+      max-height: 150px;
+      object-fit: cover;
+      display: block;
     }
+
     h1 {
       margin: 10px 0 0 0;
       font-size: 1.8rem;
+      text-align: center;
     }
+
     h2 {
       text-align: center;
       margin-top: 20px;
     }
+
     #poll-section, #results, #admin-panel {
       padding: 20px;
     }
+
     #options, #results-content, #past-polls {
       margin-top: 20px;
     }
+
     label {
       display: block;
       margin: 10px 0;
       font-size: 1.2rem;
     }
+
     input[type="checkbox"] {
       transform: scale(1.5);
       margin-right: 10px;
     }
+
     button {
       background-color: white;
       color: #CC0000;
@@ -54,7 +65,12 @@
       cursor: pointer;
       width: 100%;
     }
-    input[type="text"], input[type="password"], input[type="number"], input[type="date"], input[type="time"] {
+
+    input[type="text"],
+    input[type="password"],
+    input[type="number"],
+    input[type="date"],
+    input[type="time"] {
       width: 100%;
       padding: 10px;
       margin: 10px 0;
@@ -62,15 +78,18 @@
       border: none;
       font-size: 1rem;
     }
+
     #max-selection-info {
       margin-top: 10px;
       font-size: 1.1rem;
       text-align: center;
       font-weight: bold;
     }
+
     .result-bar-container {
       margin: 15px 0;
     }
+
     .result-bar {
       height: 25px;
       width: 0%;
@@ -84,10 +103,12 @@
       overflow: hidden;
       font-size: 0.9rem;
     }
+
     .result-label {
       margin-bottom: 5px;
       font-weight: bold;
     }
+
     .result-block {
       border: 2px solid white;
       padding: 10px;
@@ -95,6 +116,7 @@
       border-radius: 12px;
       background-color: rgba(255, 255, 255, 0.1);
     }
+
     .hide-button {
       background-color: #fff;
       color: #CC0000;
@@ -103,20 +125,29 @@
       font-size: 1rem;
       border-radius: 6px;
       width: auto;
+      display: block;
     }
+
+    .admin-only {
+      display: none;
+    }
+
     @media (max-width: 600px) {
       h1 { font-size: 1.5rem; }
       h2 { font-size: 1.3rem; }
       label { font-size: 1.1rem; }
       button { font-size: 1rem; }
-      input[type="text"], input[type="password"], input[type="number"], input[type="date"], input[type="time"] { font-size: 0.9rem; }
+      input[type="text"],
+      input[type="password"],
+      input[type="number"],
+      input[type="date"],
+      input[type="time"] { font-size: 0.9rem; }
     }
   </style>
 </head>
 <body>
   <header id="secret-click-area">
-    <div>📊</div>
-    <h1>Encuesta en Vivo</h1>
+    <img src="logoss.png" alt="Encabezado">
   </header>
 
   <div id="poll-section" style="display:none;">
@@ -128,7 +159,9 @@
 
   <div id="results">
     <h2>Resultados</h2>
-    <button class="hide-button" onclick="hideAllResults()">Ocultar Todos los Resultados</button>
+    <div class="admin-only">
+      <button class="hide-button" onclick="hideAllResults()">Ocultar Todos los Resultados</button>
+    </div>
     <div id="results-content"></div>
   </div>
 

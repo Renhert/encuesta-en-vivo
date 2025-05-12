@@ -11,7 +11,6 @@ app.use(express.static('public'));
 
 let currentPoll = null;
 let pollTimer = null;
-const pastPolls = [];
 
 function startPoll(question, options, maxSelections, durationSeconds, showAt) {
   currentPoll = {
@@ -55,13 +54,6 @@ function endPoll() {
     currentPoll.isActive = false;
     currentPoll.endTime = Date.now();
 
-    pastPolls.push({
-      id: currentPoll.id,
-      question: currentPoll.question,
-      options: currentPoll.options,
-      endTime: currentPoll.endTime
-    });
-
     io.emit('pollResults', currentPoll.options);
   }
 }
@@ -72,7 +64,7 @@ io.on('connection', (socket) => {
       id: currentPoll.id,
       question: currentPoll.question,
       options: Object.keys(currentPoll.options),
-      maxSelections: currentPoll.maxSelections,
+      maxSelections: currentPoll.maxSelections
     });
   }
 

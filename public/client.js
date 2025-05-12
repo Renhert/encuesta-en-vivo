@@ -19,12 +19,15 @@ let countdownInterval = null;
 const ADMIN_PASSWORD = "019143";
 let currentPollId = null;
 let maxSelectionsAllowed = 1;
+let isAdmin = false;
 
 adminLoginButton.addEventListener('click', () => {
   const password = document.getElementById('admin-password').value.trim();
   if (password === ADMIN_PASSWORD) {
     adminLogin.style.display = 'none';
     adminActions.style.display = 'block';
+    document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+    isAdmin = true;
   } else {
     alert("Contraseña incorrecta.");
   }
@@ -139,12 +142,14 @@ socket.on('pollResults', (options) => {
     resultBlock.appendChild(container);
   });
 
-  const hideButton = document.createElement('button');
-  hideButton.className = 'hide-button';
-  hideButton.textContent = 'Ocultar esta encuesta';
-  hideButton.onclick = () => resultBlock.remove();
+  if (isAdmin) {
+    const hideButton = document.createElement('button');
+    hideButton.className = 'hide-button';
+    hideButton.textContent = 'Ocultar esta encuesta';
+    hideButton.onclick = () => resultBlock.remove();
+    resultBlock.appendChild(hideButton);
+  }
 
-  resultBlock.appendChild(hideButton);
   resultsContent.prepend(resultBlock);
 });
 
@@ -180,7 +185,6 @@ function startCountdown(seconds) {
   }, 1000);
 }
 
-// Panel secreto admin
 let clickCount = 0;
 let clickTimer = null;
 
