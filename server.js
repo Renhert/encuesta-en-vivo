@@ -13,7 +13,7 @@ let currentPoll = null;
 let pollTimer = null;
 let lastPollResults = null;
 
-function startPoll(question, options, maxSelections, durationSeconds) {
+function startPoll(question, options, maxSelections, durationSeconds, showAt) {
   currentPoll = {
     id: uuidv4(),
     question,
@@ -24,6 +24,7 @@ function startPoll(question, options, maxSelections, durationSeconds) {
     isActive: true,
     startTime: Date.now(),
     maxSelections,
+    showAt
   };
 
   io.emit('newPoll', {
@@ -32,6 +33,7 @@ function startPoll(question, options, maxSelections, durationSeconds) {
     options: Object.keys(currentPoll.options),
     maxSelections: currentPoll.maxSelections,
     durationSeconds,
+    showAt
   });
 
   if (pollTimer) clearTimeout(pollTimer);
@@ -40,9 +42,14 @@ function startPoll(question, options, maxSelections, durationSeconds) {
     pollTimer = setTimeout(() => {
       endPoll();
     }, durationSeconds * 1000);
+  } else if (showAt && showAt > Date.now()) {
+    const delay = showAt - Date.now();
+    pollTimer = setTimeout(() => {
+      endPoll();
+    }, delay);
   }
 
-  lastPollResults = null;
+  lastPollResults = null; // Reset resultados
 }
 
 function endPoll() {
@@ -60,22 +67,24 @@ function endPoll() {
 }
 
 io.on('connection', (socket) => {
+  // Mostrar encuesta si está activa
   if (currentPoll && currentPoll.isActive) {
     socket.emit('newPoll', {
       id: currentPoll.id,
       question: currentPoll.question,
       options: Object.keys(currentPoll.options),
-      maxSelections: currentPoll.maxSelections,
+      maxSelections: currentPoll.maxSelections
     });
   }
 
+  // Mostrar resultados anteriores si existen
   if (lastPollResults) {
     socket.emit('pollResults', lastPollResults.options);
   }
 
   socket.on('vote', (selectedOptions) => {
     if (currentPoll && currentPoll.isActive) {
-      selectedOptions.forEach((option) => {
+      selectedOptions.forEach(option => {
         if (currentPoll.options[option] !== undefined) {
           currentPoll.options[option]++;
         }
@@ -83,8 +92,8 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('startNewPoll', ({ question, options, maxSelections, durationSeconds }) => {
-    startPoll(question, options, maxSelections, durationSeconds);
+  socket.on('startNewPoll', ({ question, options, maxSelections, durationSeconds, showAt }) => {
+    startPoll(question, options, maxSelections, durationSeconds, showAt);
   });
 
   socket.on('endPoll', () => {
@@ -98,6 +107,6 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Servidor corriendo en el puerto ${PORT}`);
+server.listen(PORT, () => {
+  console.log(`Servidor en marcha en el puerto ${PORT}`);
 });

@@ -1,44 +1,94 @@
-const socket = io({ transports: ['polling'] });
+const socket = io();
 
 const pollSection = document.getElementById('poll-section');
+const resultsEl = document.getElementById('results');
 const questionEl = document.getElementById('question');
 const optionsEl = document.getElementById('options');
-const maxSelectionInfo = document.getElementById('max-selection-info');
-const timerEl = document.getElementById('timer');
-const resultsEl = document.getElementById('results');
 const resultsContent = document.getElementById('results-content');
+const adminPanel = document.getElementById('admin-panel');
+const adminLogin = document.getElementById('admin-login');
+const adminActions = document.getElementById('admin-actions');
+
+let currentPollId = null;
+
+const secretArea = document.getElementById('secret-click-area');
+let clickCount = 0;
+let clickTimer = null;
+
+secretArea.addEventListener('click', () => {
+  clickCount++;
+  if (clickCount === 5) {
+    adminPanel.style.display = 'block';
+    adminLogin.style.display = 'block';
+    adminActions.style.display = 'none';
+    clickCount = 0;
+  }
+  clearTimeout(clickTimer);
+  clickTimer = setTimeout(() => (clickCount = 0), 1000);
+});
+
+document.getElementById('admin-login-button').addEventListener('click', () => {
+  const password = document.getElementById('admin-password').value;
+  if (password === '019143') {
+    adminLogin.style.display = 'none';
+    adminActions.style.display = 'block';
+  } else {
+    alert('Contraseña incorrecta');
+  }
+});
+
+document.getElementById('admin-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const question = document.getElementById('new-question').value.trim();
+  const options = document.getElementById('new-options').value.split(',').map(o => o.trim());
+  const max = parseInt(document.getElementById('max-selections').value);
+  const duration = parseInt(document.getElementById('duration').value) || null;
+  const date = document.getElementById('show-date').value;
+  const time = document.getElementById('show-time').value;
+  const showAt = date && time ? new Date(`${date}T${time}`).getTime() : null;
+
+  socket.emit('startNewPoll', { question, options, maxSelections: max, durationSeconds: duration, showAt });
+  e.target.reset();
+});
+
+document.getElementById('end-poll-button').addEventListener('click', () => {
+  socket.emit('endPoll');
+});
+
+document.getElementById('hide-results-button').addEventListener('click', () => {
+  socket.emit('hideResults');
+});
 
 socket.on('newPoll', (data) => {
-  resultsEl.style.display = 'none';
+  currentPollId = data.id;
   pollSection.style.display = 'block';
-
+  resultsEl.style.display = 'none';
   questionEl.textContent = data.question;
   optionsEl.innerHTML = '';
-  maxSelectionInfo.textContent = `Puedes seleccionar hasta ${data.maxSelections} opciones`;
+  document.getElementById('max-selection-info').textContent = `Puedes seleccionar hasta ${data.maxSelections} opciones`;
 
-  const alreadyVoted = localStorage.getItem('pollVoted_' + data.id);
+  const alreadyVoted = localStorage.getItem('pollVoted_' + currentPollId);
 
   data.options.forEach(option => {
     const label = document.createElement('label');
-    label.innerHTML = `<input type="checkbox" name="option" value="${option}" ${alreadyVoted ? 'disabled' : ''}> ${option}`;
+    label.innerHTML = `<input type="checkbox" name="option" value="${option}" ${alreadyVoted ? 'disabled' : ''}/> ${option}`;
     optionsEl.appendChild(label);
     optionsEl.appendChild(document.createElement('br'));
   });
 
-  const voteButton = document.createElement('button');
-  voteButton.textContent = 'Votar';
-  voteButton.disabled = alreadyVoted !== null;
-  voteButton.onclick = () => {
+  const button = document.createElement('button');
+  button.textContent = 'Votar';
+  button.disabled = alreadyVoted;
+  button.onclick = () => {
     const selected = Array.from(document.querySelectorAll('input[name="option"]:checked')).map(cb => cb.value);
-    if (selected.length === 0) return alert("Selecciona al menos una opción.");
-    if (selected.length > data.maxSelections) return alert(`Solo puedes seleccionar hasta ${data.maxSelections}.`);
+    if (selected.length === 0) return alert("Selecciona al menos una opción");
+    if (selected.length > data.maxSelections) return alert("Demasiadas opciones");
 
     socket.emit('vote', selected);
-    localStorage.setItem('pollVoted_' + data.id, 'true');
+    localStorage.setItem('pollVoted_' + currentPollId, 'true');
     disableOptions();
-    alert("¡Gracias por votar!");
   };
-  optionsEl.appendChild(voteButton);
+  optionsEl.appendChild(button);
 });
 
 socket.on('pollResults', (options) => {
@@ -47,20 +97,17 @@ socket.on('pollResults', (options) => {
   resultsContent.innerHTML = '';
 
   const total = Object.values(options).reduce((a, b) => a + b, 0) || 1;
-
-  Object.entries(options).forEach(([option, count]) => {
+  Object.entries(options).forEach(([opt, count]) => {
     const pct = ((count / total) * 100).toFixed(1);
-
     const container = document.createElement('div');
     container.className = 'result-bar-container';
 
     const label = document.createElement('div');
     label.className = 'result-label';
-    label.textContent = `${option}: ${count} votos (${pct}%)`;
+    label.textContent = `${opt}: ${count} votos (${pct}%)`;
 
     const bar = document.createElement('div');
     bar.className = 'result-bar';
-    bar.style.backgroundColor = '#fff';
     setTimeout(() => bar.style.width = `${pct}%`, 100);
 
     container.appendChild(label);

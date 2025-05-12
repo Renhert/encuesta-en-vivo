@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
   <style>
     body {
-      background-color: #cc0000;
+      background-color: #CC0000;
       color: white;
       font-family: 'Poppins', sans-serif;
       margin: 0;
@@ -23,27 +23,13 @@
       cursor: pointer;
     }
 
-    h1 {
-      margin: 10px 0 0 0;
-      font-size: 1.8rem;
+    h1, h2 {
       text-align: center;
+      margin: 10px 0;
     }
 
-    h2 {
-      text-align: center;
-      margin-top: 20px;
-    }
-
-    #poll-section,
-    #results,
-    #admin-panel {
+    #poll-section, #results, #admin-panel {
       padding: 20px;
-    }
-
-    #options,
-    #results-content,
-    #past-polls {
-      margin-top: 20px;
     }
 
     label {
@@ -52,42 +38,25 @@
       font-size: 1.2rem;
     }
 
-    input[type='checkbox'] {
+    input[type="checkbox"] {
       transform: scale(1.5);
       margin-right: 10px;
     }
 
-    button {
-      background-color: white;
-      color: #cc0000;
-      border: none;
-      padding: 12px 20px;
-      margin-top: 20px;
-      font-size: 1.2rem;
-      font-weight: bold;
-      border-radius: 8px;
-      cursor: pointer;
-      width: 100%;
-    }
-
-    input[type='text'],
-    input[type='password'],
-    input[type='number'],
-    input[type='date'],
-    input[type='time'] {
+    input[type="text"], input[type="password"], input[type="number"], input[type="date"], input[type="time"], button {
       width: 100%;
       padding: 10px;
       margin: 10px 0;
+      font-size: 1rem;
       border-radius: 6px;
       border: none;
-      font-size: 1rem;
     }
 
-    #max-selection-info {
-      margin-top: 10px;
-      font-size: 1.1rem;
-      text-align: center;
+    button {
+      background-color: white;
+      color: #CC0000;
       font-weight: bold;
+      cursor: pointer;
     }
 
     .result-bar-container {
@@ -100,53 +69,17 @@
       border-radius: 12px;
       transition: width 1s ease-in-out;
       background-color: white;
-      color: #cc0000;
+      color: #CC0000;
       padding: 5px;
       font-weight: bold;
       text-align: right;
       overflow: hidden;
-      font-size: 0.9rem;
-    }
-
-    .result-label {
-      margin-bottom: 5px;
-      font-weight: bold;
-    }
-
-    .admin-only {
-      display: none;
-    }
-
-    @media (max-width: 600px) {
-      h1 {
-        font-size: 1.5rem;
-      }
-
-      h2 {
-        font-size: 1.3rem;
-      }
-
-      label {
-        font-size: 1.1rem;
-      }
-
-      button {
-        font-size: 1rem;
-      }
-
-      input[type='text'],
-      input[type='password'],
-      input[type='number'],
-      input[type='date'],
-      input[type='time'] {
-        font-size: 0.9rem;
-      }
     }
   </style>
 </head>
 <body>
   <header id="secret-click-area">
-    <img src="logoss.png" alt="Cabecera" />
+    <img src="logoss.png" alt="Logo" />
   </header>
 
   <div id="poll-section" style="display: none;">
@@ -158,15 +91,12 @@
 
   <div id="results" style="display: none;">
     <h2>Resultados</h2>
-    <div class="admin-only">
-      <button id="hide-results-button">Ocultar Resultados</button>
-    </div>
     <div id="results-content"></div>
   </div>
 
   <div id="admin-panel" style="display: none;">
     <div id="admin-login">
-      <input type="password" id="admin-password" placeholder="Contraseña de administrador" required />
+      <input type="password" id="admin-password" placeholder="Contraseña de administrador" />
       <button id="admin-login-button">Entrar</button>
     </div>
 
@@ -175,19 +105,15 @@
       <form id="admin-form">
         <input type="text" id="new-question" placeholder="Pregunta de la encuesta" required />
         <input type="text" id="new-options" placeholder="Opciones separadas por comas" required />
-        <input type="number" id="max-selections" placeholder="Máximo de opciones a seleccionar" required />
+        <input type="number" id="max-selections" placeholder="Máximo de opciones" required />
         <input type="number" id="duration" placeholder="Duración en segundos (opcional)" />
-        <input type="date" id="show-date" placeholder="Fecha de publicación (opcional)" />
-        <input type="time" id="show-time" placeholder="Hora de publicación (opcional)" />
+        <input type="date" id="show-date" />
+        <input type="time" id="show-time" />
         <button type="submit">Lanzar Nueva Encuesta</button>
       </form>
-
       <button id="end-poll-button">Finalizar Encuesta</button>
-
-      <h2>Historial de Encuestas</h2>
-      <div id="past-polls"></div>
+      <button id="hide-results-button">Ocultar Resultados</button>
     </div>
   </div>
 </body>
 </html>
-
