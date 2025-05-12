@@ -11,10 +11,9 @@ app.use(express.static('public'));
 
 let currentPoll = null;
 let pollTimer = null;
-let lastPollResults = null; // ⬅ Guardar resultados después del cierre
 const pastPolls = [];
 
-function startPoll(question, options, maxSelections, durationSeconds) {
+function startPoll(question, options, maxSelections, durationSeconds, showAt) {
   currentPoll = {
     id: uuidv4(),
     question,
@@ -25,6 +24,7 @@ function startPoll(question, options, maxSelections, durationSeconds) {
     isActive: true,
     startTime: Date.now(),
     maxSelections,
+    showAt
   };
 
   io.emit('newPoll', {
@@ -33,6 +33,7 @@ function startPoll(question, options, maxSelections, durationSeconds) {
     options: Object.keys(currentPoll.options),
     maxSelections: currentPoll.maxSelections,
     durationSeconds,
+    showAt
   });
 
   if (pollTimer) clearTimeout(pollTimer);
@@ -41,9 +42,12 @@ function startPoll(question, options, maxSelections, durationSeconds) {
     pollTimer = setTimeout(() => {
       endPoll();
     }, durationSeconds * 1000);
+  } else if (showAt && showAt > Date.now()) {
+    const delay = showAt - Date.now();
+    pollTimer = setTimeout(() => {
+      endPoll();
+    }, delay);
   }
-
-  lastPollResults = null; // reiniciar resultados previos
 }
 
 function endPoll() {
@@ -56,20 +60,7 @@ function endPoll() {
       options: currentPoll.options,
       endTime: currentPoll.endTime,
     });
-
-    lastPollResults = {
-      question: currentPoll.question,
-      options: currentPoll.options
-    };
-
     io.emit('pollResults', currentPoll.options);
-
-    // 🕓 Borrar resultados después de 30 minutos
-    setTimeout(() => {
-      if (lastPollResults) {
-        lastPollResults = null;
-      }
-    }, 30 * 60 * 1000);
   }
 }
 
@@ -81,8 +72,6 @@ io.on('connection', (socket) => {
       options: Object.keys(currentPoll.options),
       maxSelections: currentPoll.maxSelections,
     });
-  } else if (lastPollResults) {
-    socket.emit('pollResults', lastPollResults.options);
   }
 
   socket.on('vote', (selectedOptions) => {
@@ -95,8 +84,8 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('startNewPoll', ({ question, options, maxSelections, durationSeconds }) => {
-    startPoll(question, options, maxSelections, durationSeconds);
+  socket.on('startNewPoll', ({ question, options, maxSelections, durationSeconds, showAt }) => {
+    startPoll(question, options, maxSelections, durationSeconds, showAt);
   });
 
   socket.on('endPoll', () => {
@@ -116,7 +105,6 @@ io.on('connection', (socket) => {
   });
 
   socket.on('hideResults', () => {
-    lastPollResults = null; // ⬅ Borrar resultados también en servidor
     io.emit('hideResults');
   });
 });

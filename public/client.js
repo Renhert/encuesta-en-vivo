@@ -23,19 +23,17 @@ let currentPollId = null;
 let maxSelectionsAllowed = 1;
 let resultsTimeout = null;
 
-// 🔥 Nuevo: control de login
 adminLoginButton.addEventListener('click', () => {
   const password = document.getElementById('admin-password').value.trim();
   if (password === ADMIN_PASSWORD) {
     adminLogin.style.display = 'none';
     adminActions.style.display = 'block';
-    socket.emit('getPastPolls'); // cargar historial
+    socket.emit('getPastPolls');
   } else {
     alert("Contraseña incorrecta.");
   }
 });
 
-// 🔥 Formularios de admin
 adminForm.addEventListener('submit', (e) => {
   e.preventDefault();
 
@@ -44,6 +42,14 @@ adminForm.addEventListener('submit', (e) => {
   const maxSelections = parseInt(document.getElementById('max-selections').value);
   const durationInput = document.getElementById('duration').value.trim();
   const duration = durationInput ? parseInt(durationInput) : null;
+
+  const showDate = document.getElementById('show-date').value;
+  const showTime = document.getElementById('show-time').value;
+  let showAt = null;
+
+  if (showDate && showTime) {
+    showAt = new Date(`${showDate}T${showTime}`).getTime();
+  }
 
   if (!question || options.length < 2 || isNaN(maxSelections) || maxSelections < 1) {
     alert("Rellena todos los campos correctamente.");
@@ -54,7 +60,8 @@ adminForm.addEventListener('submit', (e) => {
     question,
     options,
     maxSelections,
-    durationSeconds: duration
+    durationSeconds: duration,
+    showAt
   });
 
   adminForm.reset();
@@ -68,7 +75,6 @@ hideResultsButton.addEventListener('click', () => {
   socket.emit('hideResults');
 });
 
-// Mostrar encuesta activa
 socket.on('newPoll', (data) => {
   currentPollId = data.id;
   maxSelectionsAllowed = data.maxSelections || 1;
@@ -115,7 +121,6 @@ socket.on('newPoll', (data) => {
   }
 });
 
-// Mostrar resultados
 socket.on('pollResults', (options) => {
   pollSection.style.display = 'none';
   resultsEl.style.display = 'block';
@@ -183,7 +188,7 @@ function startResultsTimeout() {
   }, 30 * 60 * 1000);
 }
 
-// Panel secreto admin (clic 5 veces)
+// Panel admin secreto
 let clickCount = 0;
 let clickTimer = null;
 
@@ -191,7 +196,7 @@ secretArea.addEventListener('click', () => {
   clickCount++;
   if (clickCount === 5) {
     adminPanel.style.display = 'block';
-    adminLogin.style.display = 'block'; // mostrar solo login primero
+    adminLogin.style.display = 'block';
     adminActions.style.display = 'none';
     clickCount = 0;
     clearTimeout(clickTimer);
@@ -203,13 +208,11 @@ secretArea.addEventListener('click', () => {
   }
 });
 
-// Historial
 socket.on('pastPolls', (polls) => {
   pastPollsDiv.innerHTML = '';
-
   polls.forEach(poll => {
-    const pollDiv = document.createElement('div');
     const date = new Date(poll.endTime).toLocaleString();
+    const pollDiv = document.createElement('div');
     pollDiv.innerHTML = `<strong>${poll.question}</strong><br>${Object.entries(poll.options).map(([opt, count]) => `${opt}: ${count} votos`).join('<br>')}<br><small>Finalizada el ${date}</small><br><button onclick="deletePoll('${poll.id}')">Eliminar</button><hr>`;
     pastPollsDiv.appendChild(pollDiv);
   });
@@ -225,3 +228,4 @@ function deletePoll(pollId) {
 socket.on('hideResults', () => {
   resultsEl.style.display = 'none';
 });
+
